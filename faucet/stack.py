@@ -28,16 +28,18 @@ class Stack(Conf):
 is technically a fixed allocation for this DP Stack instance."""
 
     defaults = {
-        'priority': None,
         # Sets the root priority value of the current DP with stacking
-        'route_learning': False,
+        'priority': None,
         # Use the stack route algorithms, will be forced true if routing is enabled
-        'down_time_multiple': 3,
+        'route_learning': False,
         # Number of update time intervals for a down stack node to still be considered healthy
+        'down_time_multiple': 3,
+        # Minimum percentage value of required UP stack ports for this stack
+        # node to be considered healthy
         'min_stack_health': 1.0,
-        # Minimum percentage value of required UP stack ports for this stack node to be considered healthy
+        # Minimum percentage value of required UP LACP ports for this stack
+        # node to be considered healthy
         'min_lacp_health': 1.0,
-        # Minimum percentage value of required UP LACP ports for this stack node to be considered healthy
     }
 
     defaults_types = {
@@ -91,7 +93,7 @@ is technically a fixed allocation for this DP Stack instance."""
         self.dyn_healthy_info = (False, 0.0, 0.0)
         self.dyn_healthy = False
 
-        super(Stack, self).__init__(_id, dp_id, conf)
+        super().__init__(_id, dp_id, conf)
 
     def clone_dyn_state(self, prev_stack, dps=None):
         """Copy dyn state from the old stack instance when warm/cold starting"""
@@ -222,7 +224,8 @@ is technically a fixed allocation for this DP Stack instance."""
             self.dyn_healthy = False
         return self.dyn_healthy, reason
 
-    def nominate_stack_root(self, stacks):
+    @staticmethod
+    def nominate_stack_root(stacks):
         """Return stack names in priority order and the chosen root"""
         def health_priority(stack):
             # Invert the health priority info so it is sorted correctly
@@ -337,7 +340,7 @@ is technically a fixed allocation for this DP Stack instance."""
 
         return edge_name
 
-    def modify_link(self, dp, port, add=True):
+    def modify_link(self, dp, port, add=True):  # pylint: disable=invalid-name
         """Update the stack topology according to the event"""
         return Stack.modify_topology(self.graph, dp, port, add)
 

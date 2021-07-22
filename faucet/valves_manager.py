@@ -184,7 +184,8 @@ class ValvesManager:
             else:
                 # Current stack root does not change, however ensure that the current stack root
                 #   is known for all DPs
-                new_other_valves = [valve for valve in self.valves.values() if valve != new_root_valve]
+                new_other_valves = [valve for valve in self.valves.values()
+                                    if valve != new_root_valve]
                 inconsistent_dps = not new_root_valve.stack_manager.consistent_roots(
                     prev_root_name, new_root_valve, new_other_valves)
                 if inconsistent_dps:
@@ -203,7 +204,7 @@ class ValvesManager:
                 valve.stale_root = True
         return stack_change
 
-    def event_socket_heartbeat(self, now):
+    def event_socket_heartbeat(self):
         """raises event for event sock heartbeat"""
         self._notify({'EVENT_SOCK_HEARTBEAT': None})
 
@@ -265,7 +266,7 @@ class ValvesManager:
         self.update_config_applied(reset=True)
         if new_dps is None:
             return False
-        deleted_dpids = {v for v in self.valves} - {dp.dp_id for dp in new_dps}
+        deleted_dpids = set(self.valves) - {dp.dp_id for dp in new_dps}
         sent = {}
         for new_dp in new_dps:
             dp_id = new_dp.dp_id
@@ -347,6 +348,12 @@ class ValvesManager:
     def _other_running_valves(self, valve):
         return [other_valve for other_valve in self.valves.values()
                 if valve != other_valve and other_valve.dp.dyn_running]
+
+    def port_desc_stats_reply_handler(self, valve, msg, now):
+        """Handle a port desc stats reply message."""
+        ofmsgs_by_valve = valve.port_desc_stats_reply_handler(
+            msg.body, self._other_running_valves(valve), now)
+        self._send_ofmsgs_by_valve(ofmsgs_by_valve)
 
     def port_status_handler(self, valve, msg, now):
         """Handle a port status change message."""

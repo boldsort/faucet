@@ -73,6 +73,10 @@ class FaucetFaultToleranceBaseTest(FaucetTopoTestBase):
     # Dictionary of roots to stack priority value
     stack_roots = None
 
+    host_links = None
+    switch_links = None
+    routers = None
+
     def setUp(self):
         pass
 
@@ -324,7 +328,7 @@ class FaucetFaultToleranceBaseTest(FaucetTopoTestBase):
         """Make sure to dump the watcher information too"""
         if self.topo_watcher:
             self.topo_watcher.dump_info(self.tmpdir)
-        super(FaucetFaultToleranceBaseTest, self).tearDown(ignore_oferrors=ignore_oferrors)
+        super().tearDown(ignore_oferrors=ignore_oferrors)
 
 
 class FaucetFaultTolerance2DPTest(FaucetFaultToleranceBaseTest):

@@ -72,7 +72,9 @@ class EventFaucetFastAdvertise(event.EventBase):  # pylint: disable=too-few-publ
 
 
 class EventFaucetEventSockHeartbeat(event.EventBase):  # pylint: disable=too-few-public-methods
-    """Event used to trigger periodic events on event sock, causing it to raise an exception if conn is broken."""
+    """Event used to trigger periodic events on event sock,
+    causing it to raise an exception if conn is broken.
+    """
 
 
 class Faucet(RyuAppBase):
@@ -217,7 +219,7 @@ class Faucet(RyuAppBase):
     @set_ev_cls(EventFaucetEventSockHeartbeat, MAIN_DISPATCHER)
     @kill_on_exception(exc_logname)
     def _event_socket_heartbeat(self, _):
-        self.valves_manager.event_socket_heartbeat(time.time())
+        self.valves_manager.event_socket_heartbeat()
 
     @set_ev_cls(EventFaucetResolveGateways, MAIN_DISPATCHER)
     @set_ev_cls(EventFaucetStateExpire, MAIN_DISPATCHER)
@@ -231,7 +233,7 @@ class Faucet(RyuAppBase):
             time.time(),
             self._VALVE_SERVICES[type(ryu_event)][0])
 
-    @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER) # pylint: disable=no-member
+    @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)  # pylint: disable=no-member
     @kill_on_exception(exc_logname)
     def packet_in_handler(self, ryu_event):
         """Handle a packet in event from the dataplane.
@@ -244,7 +246,7 @@ class Faucet(RyuAppBase):
             return
         self.valves_manager.valve_packet_in(ryu_event.timestamp, valve, msg)
 
-    @set_ev_cls(ofp_event.EventOFPErrorMsg, MAIN_DISPATCHER) # pylint: disable=no-member
+    @set_ev_cls(ofp_event.EventOFPErrorMsg, MAIN_DISPATCHER)  # pylint: disable=no-member
     @kill_on_exception(exc_logname)
     def error_handler(self, ryu_event):
         """Handle an OFPError from a datapath.
@@ -257,7 +259,7 @@ class Faucet(RyuAppBase):
             return
         valve.oferror(msg)
 
-    @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER) # pylint: disable=no-member
+    @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)  # pylint: disable=no-member
     @kill_on_exception(exc_logname)
     def features_handler(self, ryu_event):
         """Handle receiving a switch features message from a datapath.
@@ -301,7 +303,7 @@ class Faucet(RyuAppBase):
             return
         valve.datapath_disconnect(time.time())
 
-    @set_ev_cls(ofp_event.EventOFPDescStatsReply, MAIN_DISPATCHER) # pylint: disable=no-member
+    @set_ev_cls(ofp_event.EventOFPDescStatsReply, MAIN_DISPATCHER)  # pylint: disable=no-member
     @kill_on_exception(exc_logname)
     def desc_stats_reply_handler(self, ryu_event):
         """Handle OFPDescStatsReply from datapath.
@@ -314,7 +316,20 @@ class Faucet(RyuAppBase):
             return
         valve.ofdescstats_handler(msg.body)
 
-    @set_ev_cls(ofp_event.EventOFPPortStatus, MAIN_DISPATCHER) # pylint: disable=no-member
+    @set_ev_cls(ofp_event.EventOFPPortDescStatsReply, CONFIG_DISPATCHER)  # pylint: disable=no-member
+    @kill_on_exception(exc_logname)
+    def port_desc_stats_reply_handler(self, ryu_event):
+        """Handle OFPPortDescStatsReply from datapath.
+
+        Args:
+            ryu_event (ryu.controller.ofp_event.EventOFPPortDescStatsReply): trigger.
+        """
+        valve, _, msg = self._get_valve(ryu_event)
+        if valve is None:
+            return
+        self.valves_manager.port_desc_stats_reply_handler(valve, msg, time.time())
+
+    @set_ev_cls(ofp_event.EventOFPPortStatus, MAIN_DISPATCHER)  # pylint: disable=no-member
     @kill_on_exception(exc_logname)
     def port_status_handler(self, ryu_event):
         """Handle a port status change event.
@@ -327,7 +342,7 @@ class Faucet(RyuAppBase):
             return
         self.valves_manager.port_status_handler(valve, msg, time.time())
 
-    @set_ev_cls(ofp_event.EventOFPFlowRemoved, MAIN_DISPATCHER) # pylint: disable=no-member
+    @set_ev_cls(ofp_event.EventOFPFlowRemoved, MAIN_DISPATCHER)  # pylint: disable=no-member
     @kill_on_exception(exc_logname)
     def flowremoved_handler(self, ryu_event):
         """Handle a flow removed event.
